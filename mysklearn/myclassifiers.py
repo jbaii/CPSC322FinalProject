@@ -1,6 +1,7 @@
 from mysklearn import myutils
 from mysklearn.mysimplelinearregressor import MySimpleLinearRegressor
 import numpy as np
+from scipy.stats import mode
 
 class MySimpleLinearRegressionClassifier:
     """Represents a simple linear regression classifier that discretizes
@@ -544,42 +545,90 @@ class MyDecisionTreeClassifier:
         dot.render(dot_fname, format='pdf', outfile=pdf_fname)
 
 class MyRandomForestClassifier:
+    """Represents a Random Forest classifier.
     
-    def __init__(self, n_estimators=100, max_features='sqrt', max_depth=None, min_samples_split=2, random_state=None):
-        self.n_estimators = n_estimators
-        self.max_features = max_features
-        self.max_depth = max_depth
-        self.min_samples_split = min_samples_split
+    Attributes:
+        n_trees(int): number of decision trees in the forest
+        n_features_split(str or int): number of features to consider for each split
+        trees(list): list of decision trees
+    """
+    
+    def __init__(self, n_trees=10, n_features_split='sqrt', random_state=None):
+        """Initialize the random forest with the given parameters.
+        
+        Args:
+            n_trees(int): number of trees in the forest
+            n_features_split(str or int): number of features to consider for each split
+                ('sqrt' for square root of total features, 'log2' for log base 2,
+                or int for specific number)
+            random_state(int): random seed for reproducibility
+        """
+        self.n_trees = n_trees
+        self.n_features_split = n_features_split
         self.random_state = random_state
         self.trees = []
-    
-    def fit(self, X, y):
-        self.classes_ = np.unique(y)
-        n_features = X.shape[1]
-        if self.max_features == 'sqrt':
-            max_features = int(np.sqrt(n_features))
-        elif self.max_features == 'log2':
-            max_features = int(np.log2(n_features))
-        else:
-            max_features = n_features
         
-        np.random.seed(self.random_state)
-
-        for _ in range(self.n_estimators):
-            indices = np.random.choice(len(X), len(X), replace=True)
-            bootstrap_X = X[indices]
-            bootstrap_y = y[indices]
-            feature_indices = np.random.choice(n_features, max_features, replace=False)
-
-            tree = DecisionTreeClassifier(max_depth=self.max_depth, min_samples_split=self.min_samples_split, random_state=self.random_state)
-            tree.fit(bootstrap_X[:, feature_indices], bootstrap_y)
-            self.trees.append((tree, feature_indices))
-
+    def _bootstrap_sample(self, X, y):
+        """Create a bootstrap sample from the training data."""
+        n_samples = len(X)
+        idxs = np.random.choice(n_samples, size=n_samples, replace=True)
+        return [X[i] for i in idxs], [y[i] for i in idxs]
+        
+    def _get_n_features(self, n_total_features):
+        """Determine number of features to consider at each split."""
+        if isinstance(self.n_features_split, int):
+            return min(self.n_features_split, n_total_features)
+        elif self.n_features_split == 'sqrt':
+            return max(1, int(np.sqrt(n_total_features)))
+        elif self.n_features_split == 'log2':
+            return max(1, int(np.log2(n_total_features)))
+        else:
+            return n_total_features
+            
+    def fit(self, X, y):
+        """Fit the random forest to the training data.
+        
+        Args:
+            X(list of list): The training instances
+            y(list): The training labels
+        """
+        if self.random_state is not None:
+            np.random.seed(self.random_state)
+            
+        n_features = len(X[0]) if X else 0
+        n_features_split = self._get_n_features(n_features)
+        
+        self.trees = []
+        for _ in range(self.n_trees):
+            # Create bootstrap sample
+            X_sample, y_sample = self._bootstrap_sample(X, y)
+            
+            # Train a decision tree on the bootstrap sample
+            tree = MyDecisionTreeClassifier()
+            tree.fit(X_sample, y_sample, n_features_split)
+            self.trees.append(tree)
+            
     def predict(self, X):
-        predictions = np.array([tree.predict(X[:, features]) for tree, features in self.trees])
-        # Transpose to have predictions from each tree as columns for each sample
-        predictions = predictions.T
-        # Use mode to find the most common class predicted by the trees for each sample
-        most_common = mode(predictions, axis=1)[0]
-        return most_common.flatten()
+        """Make predictions using the random forest.
+        
+        Args:
+            X(list of list): The instances to make predictions for
+            
+        Returns:
+            list: The predicted labels
+        """
+        # Get predictions from each tree
+        tree_predictions = []
+        for tree in self.trees:
+            predictions = tree.predict(X)
+            tree_predictions.append(predictions)
+            
+        # Take majority vote for final predictions
+        final_predictions = []
+        for i in range(len(X)):
+            instance_predictions = [pred[i] for pred in tree_predictions]
+            # Get most common prediction
+            final_predictions.append(Counter(instance_predictions).most_common(1)[0][0])
+            
+        return final_predictions
 
