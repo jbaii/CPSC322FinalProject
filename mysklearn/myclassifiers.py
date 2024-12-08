@@ -590,4 +590,3 @@ class MyRandomForestClassifier:
             y_predicted.append(max(set(predictions), key=predictions.count))
             
         return y_predicted
-
