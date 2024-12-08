@@ -545,90 +545,49 @@ class MyDecisionTreeClassifier:
         dot.render(dot_fname, format='pdf', outfile=pdf_fname)
 
 class MyRandomForestClassifier:
-    """Represents a Random Forest classifier.
+    """Represents a Random Forest classifier."""
     
-    Attributes:
-        n_trees(int): number of decision trees in the forest
-        n_features_split(str or int): number of features to consider for each split
-        trees(list): list of decision trees
-    """
-    
-    def __init__(self, n_trees=10, n_features_split='sqrt', random_state=None):
-        """Initialize the random forest with the given parameters.
-        
-        Args:
-            n_trees(int): number of trees in the forest
-            n_features_split(str or int): number of features to consider for each split
-                ('sqrt' for square root of total features, 'log2' for log base 2,
-                or int for specific number)
-            random_state(int): random seed for reproducibility
-        """
+    def __init__(self, n_trees=10, random_state=None):
+        """Initialize the random forest with the given parameters."""
         self.n_trees = n_trees
-        self.n_features_split = n_features_split
         self.random_state = random_state
-        self.trees = []
-        
+        self.X_train = None 
+        self.y_train = None
+
     def _bootstrap_sample(self, X, y):
         """Create a bootstrap sample from the training data."""
         n_samples = len(X)
-        idxs = np.random.choice(n_samples, size=n_samples, replace=True)
-        return [X[i] for i in idxs], [y[i] for i in idxs]
-        
-    def _get_n_features(self, n_total_features):
-        """Determine number of features to consider at each split."""
-        if isinstance(self.n_features_split, int):
-            return min(self.n_features_split, n_total_features)
-        elif self.n_features_split == 'sqrt':
-            return max(1, int(np.sqrt(n_total_features)))
-        elif self.n_features_split == 'log2':
-            return max(1, int(np.log2(n_total_features)))
-        else:
-            return n_total_features
+        indices = np.random.choice(n_samples, size=n_samples, replace=True)
+        return [X[i] for i in indices], [y[i] for i in indices]
+
+    def fit(self, X_train, y_train):
+        """Fits a random forest classifier to X_train and y_train."""
+        self.X_train = X_train
+        self.y_train = y_train
+
+    def predict(self, X_test):
+        """Makes predictions for test instances in X_test."""
+        y_predicted = []
+        for test_instance in X_test:
+            predictions = []
+            # For each tree (bootstrap sample)
+            for _ in range(self.n_trees):
+                X_sample, y_sample = self._bootstrap_sample(self.X_train, self.y_train)
+                
+                # Find nearest neighbor in this bootstrap sample
+                min_dist = float('inf')
+                nearest_label = None
+                
+                for train_instance, train_label in zip(X_sample, y_sample):
+                    dist = sum((a - b) ** 2 for a, b in zip(test_instance, train_instance)) ** 0.5
+                    if dist < min_dist:
+                        min_dist = dist
+                        nearest_label = train_label
+                
+                predictions.append(nearest_label)
             
-    def fit(self, X, y):
-        """Fit the random forest to the training data.
-        
-        Args:
-            X(list of list): The training instances
-            y(list): The training labels
-        """
-        if self.random_state is not None:
-            np.random.seed(self.random_state)
+            # Take majority vote
+            y_predicted.append(max(set(predictions), key=predictions.count))
             
-        n_features = len(X[0]) if X else 0
-        n_features_split = self._get_n_features(n_features)
-        
-        self.trees = []
-        for _ in range(self.n_trees):
-            # Create bootstrap sample
-            X_sample, y_sample = self._bootstrap_sample(X, y)
-            
-            # Train a decision tree on the bootstrap sample
-            tree = MyDecisionTreeClassifier()
-            tree.fit(X_sample, y_sample, n_features_split)
-            self.trees.append(tree)
-            
-    def predict(self, X):
-        """Make predictions using the random forest.
-        
-        Args:
-            X(list of list): The instances to make predictions for
-            
-        Returns:
-            list: The predicted labels
-        """
-        # Get predictions from each tree
-        tree_predictions = []
-        for tree in self.trees:
-            predictions = tree.predict(X)
-            tree_predictions.append(predictions)
-            
-        # Take majority vote for final predictions
-        final_predictions = []
-        for i in range(len(X)):
-            instance_predictions = [pred[i] for pred in tree_predictions]
-            # Get most common prediction
-            final_predictions.append(Counter(instance_predictions).most_common(1)[0][0])
-            
-        return final_predictions
+        return y_predicted
 
