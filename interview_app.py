@@ -1,6 +1,7 @@
 import pickle
 # we are going to use the Flask micro web framework
 from flask import Flask, request, jsonify
+import numpy as np
 
 app = Flask(__name__)
 
@@ -36,8 +37,8 @@ def index():
 def predict():
     # lets parse the unseen instance values from the query string
     # they are in the request object
-    home_rank = request.args.get("home_team_rank") # defaults to None
-    away_rank = request.args.get("away_team_rank")
+    home_rank = request.args.get("att0") # defaults to None
+    away_rank = request.args.get("att1")
     instance = [home_rank, away_rank]
     header, tree = load_model()
     # lets make a prediction!
@@ -45,6 +46,7 @@ def predict():
     if pred is not None:
         return jsonify({"prediction": pred}), 200
     # something went wrong!!
+    print(pred)
 
 
 if __name__ == "__main__":
