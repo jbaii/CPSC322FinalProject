@@ -1,7 +1,7 @@
 import requests # a lib for making http requests
 import json # a lib for working with json
 
-url = "https://flask-app-demo.onrender.com/predict?level=Junior&lang=Java&tweets=yes&phd=no"
+url = "https://cpsc322finalproject.onrender.com/predict?level=Junior&lang=Java&tweets=yes&phd=no"
 
 response = requests.get(url=url)
 
