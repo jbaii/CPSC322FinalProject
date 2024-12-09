@@ -36,18 +36,15 @@ def index():
 def predict():
     # lets parse the unseen instance values from the query string
     # they are in the request object
-    level = request.args.get("level") # defaults to None
-    lang = request.args.get("lang")
-    tweets = request.args.get("tweets")
-    phd = request.args.get("phd")
-    instance = [level, lang, tweets, phd]
+    home_rank = request.args.get("home_team_rank") # defaults to None
+    away_rank = request.args.get("away_team_rank")
+    instance = [home_rank, away_rank]
     header, tree = load_model()
     # lets make a prediction!
     pred = tdidt_predict(header, tree, instance)
     if pred is not None:
         return jsonify({"prediction": pred}), 200
     # something went wrong!!
-    return "Error making a prediction", 400
 
 
 if __name__ == "__main__":

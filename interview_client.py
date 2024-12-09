@@ -1,7 +1,7 @@
 import requests # a lib for making http requests
 import json # a lib for working with json
 
-url = "https://cpsc322finalproject.onrender.com/predict?level=Junior&lang=Java&tweets=yes&phd=no"
+url = "https://cpsc322finalproject.onrender.com/predict?home_team_rank=58&away_team_rank=24"
 
 response = requests.get(url=url)
 

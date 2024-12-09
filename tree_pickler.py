@@ -1,6 +1,6 @@
 import pickle # standard library
 
-interview_header = ["level", "lang", "tweets", "phd"]
+interview_header = ["home_team_rank", "away_team_rank"]
 interview_tree = ['Attribute', 'level', ['Value', 'Junior', ['Attribute', 'phd', ['Value', 'yes', ['Leaf', 'False', 2, 5]], ['Value', 'no', ['Leaf', 'True', 3, 5]]]], ['Value', 'Mid', ['Leaf', 'True', 4, 14]], ['Value', 'Senior', ['Attribute', 'tweets', ['Value', 'yes', ['Leaf', 'True', 2, 5]], ['Value', 'no', ['Leaf', 'False', 3, 5]]]]]
 
 # pickle (object serialization): saving a binary representation of an object
