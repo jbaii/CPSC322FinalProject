@@ -1,7 +1,7 @@
 import requests # a lib for making http requests
 import json # a lib for working with json
 
-url = "http://127.0.0.1:5001/predict?att0=1.0&att1=1.0"
+url = "http://127.0.0.1:5001/predict?home_team_rank=1.0&away_team_rank=1.0"
 
 response = requests.get(url=url)
 

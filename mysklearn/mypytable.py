@@ -172,9 +172,15 @@ class MyPyTable:
         """
         col_index = self.column_names.index(col_name)
         col = self.get_column(col_index, False)
-        avg = sum(col) / len(col)
+        s = 0 
+        i = 1
+        for n in col:
+            if n != '':
+                s+=n
+                i+=1
+        avg = s / i
         for row in self.data:
-            if row[col_index] == "NA":
+            if row[col_index] == "NA" or row[col_index] == '':
                 row[col_index] = avg
 
     def compute_summary_statistics(self, col_names):

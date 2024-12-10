@@ -1,27 +1,15 @@
 import pickle
 # we are going to use the Flask micro web framework
 from flask import Flask, request, jsonify
+from joblib import dump, load
 import numpy as np
-
+from mysklearn.myclassifiers import *
 app = Flask(__name__)
 
 def load_model():
     # unpickle header and tree in tree.p
-    infile = open("tree.p", "rb")
-    header, tree = pickle.load(infile)
-    infile.close()
-    return header, tree
-
-def tdidt_predict(header, tree, instance):
-    info_type = tree[0]
-    if info_type == "Leaf":
-        return tree[1] # label
-    att_index = header.index(tree[1])
-    for i in range(2, len(tree)):
-        value_list = tree[i]
-        if value_list[1] == instance[att_index]:
-            return tdidt_predict(header, value_list[2], instance)
-        
+    model = load("RF_math.joblib")
+    return model
 # we need to add some routes!
 # a "route" is a function that handles a request
 # e.g. for the HTML content for a home page
@@ -37,16 +25,18 @@ def index():
 def predict():
     # lets parse the unseen instance values from the query string
     # they are in the request object
-    home_rank = request.args.get("att0") # defaults to None
-    away_rank = request.args.get("att1")
+    home_rank = request.args.get("home_team_rank") # defaults to None
+    away_rank = request.args.get("away_team_rank")
     instance = [home_rank, away_rank]
-    header, tree = load_model()
+    model = load_model()
     # lets make a prediction!
-    pred = tdidt_predict(header, tree, instance)
+    pred = model.predict([np.array([float(home_rank), float(away_rank)])])
     if pred is not None:
         return jsonify({"prediction": pred}), 200
     # something went wrong!!
-    print(pred)
+    # print(pred)
+
+
 
 
 if __name__ == "__main__":
